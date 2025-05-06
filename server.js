@@ -1,18 +1,21 @@
 const express = require('express');
+const http = require('http');
 const WebSocket = require('ws');
 const app = express();
-const port = 8080;
-const wsPort = 8081;
+const port = process.env.PORT || 8080; // Use Render's PORT or fallback to 8080 locally
 
 // State variables
-let movement = 1; // 1: forward, -1: backward, 0: stop
+let movement = 0; // 1: forward, -1: backward, 0: stop
 let toggle = false; // true: run servo, false: stop servo
 
 // Middleware to parse JSON
 app.use(express.json());
 
-// Create WebSocket server
-const wss = new WebSocket.Server({ port: wsPort });
+// Create HTTP server
+const server = http.createServer(app);
+
+// Create WebSocket server, attached to the HTTP server
+const wss = new WebSocket.Server({ server });
 
 // Broadcast state to all WebSocket clients
 function broadcastState() {
@@ -30,6 +33,14 @@ wss.on('connection', ws => {
     console.log('ESP8266 connected via WebSocket');
     // Send current state to newly connected client
     ws.send(JSON.stringify({ movement, toggle }));
+    
+    ws.on('message', (msg) => {
+        console.log(`Received from ESP8266: ${msg}`);
+    });
+    
+    ws.on('error', (err) => {
+        console.error(`WebSocket error: ${err}`);
+    });
     
     ws.on('close', () => {
         console.log('ESP8266 disconnected');
@@ -65,13 +76,13 @@ app.get('/toggle', (req, res) => {
     res.json({ status: 'success', movement, toggle });
 });
 
-// app.get('/state', (req, res) => {
-//     console.log('State requested');
-//     res.json({ movement, toggle });
-// });
+// Health check endpoint for debugging
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
 
-// Start HTTP server
-app.listen(port, () => {
-    console.log(`HTTP server running on http://localhost:${port}`);
-    console.log(`WebSocket server running on ws://localhost:${wsPort}`);
+// Start server
+server.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+    console.log(`WebSocket server running on the same port`);
 });
