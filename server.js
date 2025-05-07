@@ -2,8 +2,11 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const app = express();
+const cors = require('cors'); // Added CORS package
 const port = process.env.PORT || 8080; // Use Render's PORT or fallback to 8080 locally
-
+// Middleware to parse JSON and enable CORS
+app.use(cors({ origin: '*' })); // Allow all origins
+app.use(express.json());
 // State variables
 let movement = 0; // 1: forward, -1: backward, 0: stop
 let toggle = false; // true: run servo, false: stop servo
