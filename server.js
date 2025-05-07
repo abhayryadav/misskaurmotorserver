@@ -1,17 +1,16 @@
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
+const cors = require('cors');
 const app = express();
-const cors = require('cors'); // Added CORS package
-const port = process.env.PORT || 8080; // Use Render's PORT or fallback to 8080 locally
-// Middleware to parse JSON and enable CORS
-app.use(cors({ origin: '*' })); // Allow all origins
-app.use(express.json());
+const port = process.env.PORT || 8080;
+
 // State variables
-let movement = 0; // 1: forward, -1: backward, 0: stop
+let movement = 0; // 0: stop, 1: forward, -1: backward, 2: left, 3: right
 let toggle = false; // true: run servo, false: stop servo
 
-// Middleware to parse JSON
+// Middleware to parse JSON and enable CORS
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // Create HTTP server
@@ -34,7 +33,6 @@ function broadcastState() {
 // WebSocket connection handler
 wss.on('connection', ws => {
     console.log('ESP8266 connected via WebSocket');
-    // Send current state to newly connected client
     ws.send(JSON.stringify({ movement, toggle }));
     
     ws.on('message', (msg) => {
@@ -65,6 +63,20 @@ app.get('/set-backward', (req, res) => {
     res.json({ status: 'success', movement, toggle });
 });
 
+app.get('/set-left', (req, res) => {
+    movement = 2;
+    console.log('Set movement to left (2)');
+    broadcastState();
+    res.json({ status: 'success', movement, toggle });
+});
+
+app.get('/set-right', (req, res) => {
+    movement = 3;
+    console.log('Set movement to right (3)');
+    broadcastState();
+    res.json({ status: 'success', movement, toggle });
+});
+
 app.get('/set-stop', (req, res) => {
     movement = 0;
     console.log('Set movement to stop (0)');
@@ -79,7 +91,7 @@ app.get('/toggle', (req, res) => {
     res.json({ status: 'success', movement, toggle });
 });
 
-// Health check endpoint for debugging
+// Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
