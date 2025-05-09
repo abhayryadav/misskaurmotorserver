@@ -85,7 +85,7 @@ app.get('/set-stop', (req, res) => {
 });
 
 app.get('/toggle', (req, res) => {
-    toggle = !toggle;
+    movement = 9;
     console.log(`Toggled to ${toggle ? 'ON' : 'OFF'}`);
     broadcastState();
     res.json({ status: 'success', movement, toggle });
